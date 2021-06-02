@@ -1,7 +1,7 @@
 import pandas as pd
 import re
 import unicodedata
-
+import numpy as np
 
 def unicode_to_ascii(s):
     return ''.join(
@@ -11,7 +11,8 @@ def unicode_to_ascii(s):
 
 data = pd.read_csv('data/wiki_movie_plots_deduped.csv')
 print("Amount of movies in entire dataset:", len(data))
-
+print(np.mean(data['Plot'].map(len)))
+print(type(data['Plot']))
 # 0) Filter out movies with no cast
 data = data[(data['Cast'].isna() == False) & (data['Cast'] != 'Unknown') & (data['Cast'] != '')]
 print("Amount of movies in dataset without 'NaN' and 'Unknown' cast:", len(data))
