@@ -102,6 +102,9 @@ def encode_sentence(text, tokenizer, vocab2index, N=70):
     return encoded, length
 
 
+# |--------------------------------------|
+# |       Training & Evaluation          |
+# |--------------------------------------|
 # TODO: Make function to utilize GPU instead of CPU is GPU exists
 def train_model(model, epochs=10):
     model.train()
