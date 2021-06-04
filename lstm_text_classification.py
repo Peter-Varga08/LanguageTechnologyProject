@@ -15,34 +15,43 @@ from sklearn.model_selection import train_test_split
 
 from dataloader_movies import movies_df, label_encoder, shortlisted_genres
 
-
+from spacy.lang.en.examples import sentences 
 class TextClassifierLSTM(torch.nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_classes, dropout=0.2, num_layers=2):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        # self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.3)
         self.embeddings = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, dropout=dropout, num_layers=self.num_layers)
         self.fc = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, x, s):
         # Hidden and cell state definion
-        h = torch.zeros((self.num_layers, x.size(0), self.hidden_dim))
-        c = torch.zeros((self.num_layers, x.size(0), self.hidden_dim))
+        # h = torch.zeros((self.num_layers, x.size(0), self.hidden_dim))
+        # c = torch.zeros((self.num_layers, x.size(0), self.hidden_dim))
 
-        # Initialization fo hidden and cell states
-        torch.nn.init.xavier_normal_(h)
-        torch.nn.init.xavier_normal_(c)
+        # # Initialization fo hidden and cell states
+        # torch.nn.init.xavier_normal_(h)
+        # torch.nn.init.xavier_normal_(c)
+
+        # x = self.embeddings(x)
+        # # x = self.dropout(x)
+        # x_pack = pack_padded_sequence(x, s, batch_first=True, enforce_sorted=False)
+        # out_pack, (ht, ct) = self.lstm(x_pack, (h, c))
+        # output, _ = pad_packed_sequence(out_pack, batch_first=True)
+        # # out = self.linear(ht[-1])
+        # out = self.fc(output)
+        # # out = F.log_softmax(output, dim=1)
+        # out = self.linear(ht[-1])
+
 
         x = self.embeddings(x)
-        # x = self.dropout(x)
+        x = self.dropout(x)
         x_pack = pack_padded_sequence(x, s, batch_first=True, enforce_sorted=False)
-        out_pack, (ht, ct) = self.lstm(x_pack, (h, c))
-        output, _ = pad_packed_sequence(out_pack, batch_first=True)
-        # out = self.linear(ht[-1])
-        out = self.fc(output)
-        out = F.log_softmax(output, dim=1)
+        out_pack, (ht, ct) = self.lstm(x_pack)
+        out = self.fc(ht[-1])
+
         return out
 
 
@@ -50,12 +59,13 @@ class PlotsDataset(Dataset):
     def __init__(self, X, Y):
         self.X = X
         self.y = Y
-
+        
     def __len__(self):
         return len(self.y)
-
+    
     def __getitem__(self, idx):
         return torch.from_numpy(self.X[idx][0].astype(np.int32)), self.y[idx], self.X[idx][1]
+        # return torch.Tensor(self.data[idx]).long(), torch.Tensor(self.labels[idx])
 
 
 # |--------------------------------------|
@@ -106,30 +116,40 @@ def encode_sentence(text, tokenizer, vocab2index, N=70):
 # |       Training & Evaluation          |
 # |--------------------------------------|
 # TODO: Make function to utilize GPU instead of CPU is GPU exists
-def train_model(model, epochs=10):
+def train_model(model,train_dl, epochs=10):
     model.train()
     print("Training classifier...")
-    for i in range(epochs):
+    for epoch in range(epochs):
         sum_loss = 0.0
         total = 0
         correct = 0
-        for x, y, l in train_dl:
+        for x,y,l in train_dl:
             x = x.long()
             y = y.long()
+ 
             y_pred = model(x, l)
             optimizer.zero_grad()
             # TODO: fix target size bug
+            # print(y_pred)
             loss = F.cross_entropy(y_pred, y)
+            # print(y)
+            # print(y_pred)
+            # exit()
+            preds = y_pred.argmax(dim=-1)
+            # print(preds)
+            # exit()
             loss.backward()
             optimizer.step()
             sum_loss += loss.item()*y.shape[0]
             total += y.shape[0]
-            correct += (y_pred == y).float().sum()
-            print(f"Epoch [{i}]: train loss {(sum_loss/total)}, train_acc: {correct/total}")
+            
+            correct += (preds == y).float().sum()
+            print(f"Epoch [{epoch}]: train loss {(sum_loss/total)}, train_acc: {correct/total}")
         val_loss, val_acc, val_rmse = validation_metrics(model, val_dl)
-        if i % 5 == 0:
+ 
+        if epoch % 5 == 0:
             print("train loss %.3f, val loss %.3f, val accuracy %.3f, and val rmse %.3f" % (sum_loss/total, val_loss, val_acc, val_rmse))
-
+        print("train loss %.3f, val loss %.3f, val accuracy %.3f, and val rmse %.3f" % (sum_loss/total, val_loss, val_acc, val_rmse))
 
 def validation_metrics (model, valid_dl):
     model.eval()
@@ -142,11 +162,11 @@ def validation_metrics (model, valid_dl):
         y = y.long()
         y_hat = model(x, l)
         loss = F.cross_entropy(y_hat, y)
-        pred = torch.max(y_hat, 1)[1]
-        correct += (pred == y).float().sum()
+        preds = y_hat.argmax(dim=-1)
+        correct += (preds == y).float().sum()
         total += y.shape[0]
         sum_loss += loss.item()*y.shape[0]
-        sum_rmse += np.sqrt(mean_squared_error(pred, y.unsqueeze(-1)))*y.shape[0]
+        sum_rmse += np.sqrt(mean_squared_error(preds, y.unsqueeze(-1)))*y.shape[0]
     return sum_loss/total, correct/total, sum_rmse/total
 
 
@@ -161,17 +181,25 @@ counts = trim_rare_words(movies_df, tok)
 word2idx = create_vocabulary(counts)
 movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx)))
 num_classes = len(shortlisted_genres)
-
+print("number of classes %d" % num_classes)
 X = list(movies_df['Plot_encoded'])
-y = list(movies_df['Genre_encoded'])
+y = list(movies_df['genre_encoded'])
+
 X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2)
+
 train_ds = PlotsDataset(X_train, y_train)
 valid_ds = PlotsDataset(X_valid, y_valid)
-train_dl = DataLoader(train_ds)
+
+
+train_dl= DataLoader(train_ds,
+    shuffle=True,
+    batch_size=BATCH_SIZE)
+
+# train_dl = DataLoader()
 val_dl = DataLoader(valid_ds)
 
 model = TextClassifierLSTM(len(word2idx), EMBEDDING_DIM, HIDDEN_DIM, num_classes)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = torch.optim.Adam(parameters, lr=0.05)
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-train_model(model, epochs=10)
+train_model(model,train_dl, epochs=10)

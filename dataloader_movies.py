@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import time
 from sklearn.preprocessing import LabelEncoder
-movies_df = pd.read_csv("wiki_movie_plots_deduped.csv")
+movies_df = pd.read_csv("./data/wiki_movie_plots_deduped.csv")
 movies_df = movies_df[(movies_df["Origin/Ethnicity"]=="American") | (movies_df["Origin/Ethnicity"]=="British")]
 movies_df = movies_df[["Plot", "Genre"]]
 drop_indices = movies_df[movies_df["Genre"] == "unknown" ].index
@@ -41,7 +41,7 @@ class movie_dataset(Dataset):
 
 
         label_encoder = LabelEncoder()
-        movies_df = pd.read_csv("wiki_movie_plots_deduped.csv")
+        movies_df = pd.read_csv("./data/wiki_movie_plots_deduped.csv")
         movies_df = movies_df[(movies_df["Origin/Ethnicity"]=="American") | (movies_df["Origin/Ethnicity"]=="British")]
         movies_df = movies_df[["Plot", "Genre"]]
         drop_indices = movies_df[movies_df["Genre"] == "unknown" ].index
@@ -153,15 +153,15 @@ def padding_collate_fn(batch):
 
     return padded_data, padded_labels
 
-pretrained = 'squeezebert/squeezebert-uncased'
-tokenizer = SqueezeBertTokenizer.from_pretrained(pretrained)
-tokenizer.do_basic_tokenize = False
-train_dataset = movie_dataset(tokenizer)
-train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True,collate_fn=padding_collate_fn,)
-configuration = SqueezeBertConfig.from_pretrained(pretrained)
-configuration.num_labels = 1#movies_df['Genre'].nunique()
-configuration.num_hidden_layers = 1
-configuration.num_attention_heads = 1
-configuration.output_attentions = True
-model = SqueezeBertForMultipleChoice(configuration)
-train(model, train_dataloader, train_dataloader, train_dataloader, 16)
+# pretrained = 'squeezebert/squeezebert-uncased'
+# tokenizer = SqueezeBertTokenizer.from_pretrained(pretrained)
+# tokenizer.do_basic_tokenize = False
+# train_dataset = movie_dataset(tokenizer)
+# train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True,collate_fn=padding_collate_fn,)
+# configuration = SqueezeBertConfig.from_pretrained(pretrained)
+# configuration.num_labels = 1#movies_df['Genre'].nunique()
+# configuration.num_hidden_layers = 1
+# configuration.num_attention_heads = 1
+# configuration.output_attentions = True
+# model = SqueezeBertForMultipleChoice(configuration)
+# train(model, train_dataloader, train_dataloader, train_dataloader, 16)
