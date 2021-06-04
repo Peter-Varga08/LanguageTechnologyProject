@@ -1,0 +1,57 @@
+|----------------------------------|
+|     NONTRAINED EMBEDDINGS        |
+|----------------------------------|
+Epoch [0]: train loss 2.7794, train_acc: 0.0625  val loss 2.7749, val accuracy 0.0656
+Epoch [1]: train loss 2.7097, train_acc: 0.1094  val loss 2.7896, val accuracy 0.0688
+Epoch [2]: train loss 2.2624, train_acc: 0.3023  val loss 3.0259, val accuracy 0.1
+Epoch [3]: train loss 1.3374, train_acc: 0.5969  val loss 3.7329, val accuracy 0.0844
+Epoch [4]: train loss 0.5349, train_acc: 0.8727  val loss 4.3185, val accuracy 0.0969
+Epoch [5]: train loss 0.1751, train_acc: 0.9664  val loss 5.1907, val accuracy 0.0938
+Epoch [6]: train loss 0.0535, train_acc: 0.9914  val loss 5.4562, val accuracy 0.1031
+Epoch [7]: train loss 0.0157, train_acc: 1.0  val loss 5.6544, val accuracy 0.1063
+Epoch [8]: train loss 0.0074, train_acc: 1.0  val loss 5.8304, val accuracy 0.1
+Epoch [9]: train loss 0.0049, train_acc: 1.0  val loss 5.964, val accuracy 0.1
+Epoch [10]: train loss 0.0037, train_acc: 1.0  val loss 6.073, val accuracy 0.0969
+Epoch [11]: train loss 0.003, train_acc: 1.0  val loss 6.1637, val accuracy 0.0969
+Epoch [12]: train loss 0.0025, train_acc: 1.0  val loss 6.2396, val accuracy 0.0969
+Epoch [13]: train loss 0.0021, train_acc: 1.0  val loss 6.3103, val accuracy 0.0906
+Epoch [14]: train loss 0.0018, train_acc: 1.0  val loss 6.3756, val accuracy 0.0906
+
+|----------------------------------|
+|   PRETRAINED EMBEDDINGS, FROZEN  |
+|----------------------------------|
+Epoch [0]: train loss 2.7738, train_acc: 0.0656  val loss 2.7085, val accuracy 0.0938
+Epoch [1]: train loss 2.7268, train_acc: 0.0922  val loss 2.6226, val accuracy 0.125
+Epoch [2]: train loss 2.6397, train_acc: 0.1297  val loss 2.6191, val accuracy 0.1219
+Epoch [3]: train loss 2.6551, train_acc: 0.1367  val loss 2.634, val accuracy 0.1312
+Epoch [4]: train loss 2.5127, train_acc: 0.1711  val loss 2.4682, val accuracy 0.1719
+Epoch [5]: train loss 2.2745, train_acc: 0.2602  val loss 2.431, val accuracy 0.1688
+Epoch [6]: train loss 2.0342, train_acc: 0.3313  val loss 2.4954, val accuracy 0.1906
+Epoch [7]: train loss 1.7821, train_acc: 0.4148  val loss 2.6404, val accuracy 0.1688
+Epoch [8]: train loss 1.4929, train_acc: 0.5063  val loss 2.8325, val accuracy 0.2094
+Epoch [9]: train loss 1.2172, train_acc: 0.6211  val loss 3.0662, val accuracy 0.1781
+Epoch [10]: train loss 0.9456, train_acc: 0.6992  val loss 3.1647, val accuracy 0.175
+Epoch [11]: train loss 0.6596, train_acc: 0.8055  val loss 3.608, val accuracy 0.1844
+Epoch [12]: train loss 0.4672, train_acc: 0.8773  val loss 3.7952, val accuracy 0.2
+Epoch [13]: train loss 0.2958, train_acc: 0.9281  val loss 3.6749, val accuracy 0.225
+Epoch [14]: train loss 0.241, train_acc: 0.943  val loss 4.1931, val accuracy 0.2156
+
+|----------------------------------|
+|PRETRAINED EMBEDDINGS, NON-FROZEN |
+|----------------------------------|
+
+Epoch [0]: train loss 2.7803, train_acc: 0.0609  val loss 2.7721, val accuracy 0.0437
+Epoch [1]: train loss 2.7099, train_acc: 0.1258  val loss 2.7246, val accuracy 0.0688
+Epoch [2]: train loss 2.3665, train_acc: 0.2266  val loss 2.6561, val accuracy 0.1531
+Epoch [3]: train loss 1.7578, train_acc: 0.3781  val loss 2.9019, val accuracy 0.1562
+Epoch [4]: train loss 1.183, train_acc: 0.5875  val loss 3.5055, val accuracy 0.1156
+Epoch [5]: train loss 0.7735, train_acc: 0.7375  val loss 4.0448, val accuracy 0.1406
+Epoch [6]: train loss 0.3915, train_acc: 0.8852  val loss 4.2736, val accuracy 0.1375
+Epoch [7]: train loss 0.1648, train_acc: 0.9547  val loss 4.7066, val accuracy 0.1594
+Epoch [8]: train loss 0.0896, train_acc: 0.9789  val loss 4.7465, val accuracy 0.1875
+Epoch [9]: train loss 0.0321, train_acc: 0.993  val loss 5.1745, val accuracy 0.1781
+Epoch [10]: train loss 0.0186, train_acc: 0.9969  val loss 5.1025, val accuracy 0.175
+Epoch [11]: train loss 0.0126, train_acc: 0.9969  val loss 5.1884, val accuracy 0.1781
+Epoch [12]: train loss 0.0104, train_acc: 0.9977  val loss 5.2627, val accuracy 0.1813
+Epoch [13]: train loss 0.0078, train_acc: 0.9977  val loss 5.3994, val accuracy 0.175
+Epoch [14]: train loss 0.0071, train_acc: 0.9977  val loss 5.4785, val accuracy 0.1844
