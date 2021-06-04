@@ -233,7 +233,7 @@ MIN_COUNT = 3
 # ----------- Model variables -----------
 BATCH_SIZE = 16
 HIDDEN_DIM = 50
-EMBEDDING_DIM = 300
+EMBEDDING_DIM = 100
 
 tok = spacy.load('en_core_web_sm')
 counts = trim_rare_words(movies_df, tok)
