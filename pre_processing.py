@@ -63,13 +63,13 @@ print("Top 15 names:", list(sorted_names.keys())[0:15])
 labels = list(sorted_names.keys())[0:100]
 
 # Get movie plots that correspond to an actor/actress from top1-100
-# plots = []
-# for label in labels:
-#     curr_label = []
-#     for i in range(1, len(data)):
-#         if label in data.iloc[i]['Cast']:
-#             curr_label.append(data.iloc[i]['Plot'])
-#     plots.append(curr_label)
+plots = []
+for label in labels:
+    curr_label = []
+    for i in range(1, len(data)):
+        if label in data.iloc[i]['Cast']:
+            curr_label.append(data.iloc[i]['Plot'])
+    plots.append(curr_label)
 
 
 

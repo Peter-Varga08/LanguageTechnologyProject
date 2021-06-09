@@ -101,14 +101,15 @@ class TextClassifierLSTM(torch.nn.Module):
         self.vocab_size = len(vocab)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(dropout)
         # self.embeddings = nn.Embedding(self.vocab_size, embedding_dim, padding_idx=0)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, dropout=dropout, num_layers=self.num_layers)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True,
+                            dropout=dropout, num_layers=self.num_layers, bidirectional=True)
+        # self.fc = nn.Linear(2*hidden_dim, num_classes)
         self.fc = nn.Linear(hidden_dim, num_classes)
 
 
     def forward(self, x, s):
-
         x = self.embeddings(x)
         x = self.dropout(x)
         x_pack = pack_padded_sequence(x, s, batch_first=True, enforce_sorted=False)
@@ -166,7 +167,7 @@ def create_vocabulary(counts):
 
 
 # TODO: Adjust sentence length to max_sentence_length instead of N=70
-def encode_sentence(text, tokenizer, vocab2index, N=70):
+def encode_sentence(text, tokenizer, vocab2index, N=500):
     tokenized = tokenize(text, tokenizer)
     encoded = np.zeros(N, dtype=int)
     enc1 = np.array([vocab2index.get(word, vocab2index["UNK"]) for word in tokenized])
@@ -178,7 +179,7 @@ def encode_sentence(text, tokenizer, vocab2index, N=70):
 # |--------------------------------------|
 # |       Training & Evaluation          |
 # |--------------------------------------|
-# TODO: Make function to utilize GPU instead of CPU is GPU exists
+# TODO: Make function to utilize GPU instead of CPU if GPU exists
 def train_model(model,train_dl, epochs=10):
     model.train()
     print("Training classifier...")
@@ -210,6 +211,7 @@ def train_model(model,train_dl, epochs=10):
               f" val accuracy {round(float(val_acc), 4)}")
         # print("Epoch [%d], train loss %.3f, , and val rmse %.3f" % (epoch, sum_loss/total, val_loss, val_acc, val_rmse))
 
+
 def validation_metrics (model, valid_dl):
     model.eval()
     correct = 0
@@ -225,14 +227,14 @@ def validation_metrics (model, valid_dl):
         correct += (preds == y).float().sum()
         total += y.shape[0]
         sum_loss += loss.item()*y.shape[0]
-        sum_rmse += np.sqrt(mean_squared_error(preds, y.unsqueeze(-1)))*y.shape[0]
+        # sum_rmse += np.sqrt(mean_squared_error(preds, y.unsqueeze(-1)))*y.shape[0]
     return sum_loss/total, correct/total, sum_rmse/total
 
 
 MIN_COUNT = 3
 # ----------- Model variables -----------
 BATCH_SIZE = 16
-HIDDEN_DIM = 50
+HIDDEN_DIM = 100
 EMBEDDING_DIM = 100
 
 tok = spacy.load('en_core_web_sm')
@@ -260,5 +262,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = TextClassifierLSTM(word2idx, EMBEDDING_DIM, HIDDEN_DIM, num_classes)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
-optimizer = torch.optim.Adam(parameters, lr=5e-3)
+optimizer = torch.optim.Adam(parameters, lr=5e-3, weight_decay=5e-4)
+# optimizer = torch.optim.RMSprop(parameters, lr=5e-3, weight_decay=1e-3)
 train_model(model, train_dl, epochs=15)
