@@ -1,6 +1,5 @@
 import pandas as pd
-import re
-import unicodedata
+from sklearn.model_selection import train_test_split
 
 
 def split_names(name):
@@ -76,3 +75,27 @@ for i in range(len(data)):
         else:
             if len(name) > 3:
                 plots[name].append(data.iloc[i]['Plot'])
+
+# Filter plots shorter than 1000 characters
+MIN_LENGTH = 1000
+plot_lengths = {name: [len(plot) for plot in plots[name]] for name in labels}
+max_length = 0
+for name, lengths in plot_lengths.items():
+    for length in lengths:
+        if length > max_length:
+            max_length = length
+
+# Filtering and Augmenting data:
+# - Discard each plot shorther than MIN_LENGTH
+# - Split up the plots to subplots based on MIN_LENGTH
+plots_filtered = {label: [] for label in labels}
+for name in labels:
+    for idx, plot in enumerate(plots[name]):
+        if plot_lengths[name][idx] > MIN_LENGTH:
+            for j in range(max_length//MIN_LENGTH):
+                if len(plot[0 + j*1000: 1000*(j+1)]) == MIN_LENGTH:
+                    plots_filtered[name].append(plot[0 + j*1000: 1000*(j+1)])
+                # else:
+                #     plots_filtered[name].append(plot[0 + j*1000:])
+                #     break
+
