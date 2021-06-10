@@ -6,6 +6,7 @@ import re
 import spacy
 import torch.nn.functional as F
 import string
+import csv
 import os
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from sklearn.metrics import mean_squared_error
@@ -16,6 +17,15 @@ from sklearn.model_selection import train_test_split
 from dataloader_movies import movies_df, label_encoder, shortlisted_genres
 from annoy import AnnoyIndex
 from spacy.lang.en.examples import sentences
+
+
+# ----------- Pre-processing constants -----------
+MIN_COUNT = 3
+PLOT_LENGTH = 200
+# ----------- Model constants -----------
+BATCH_SIZE = 16
+HIDDEN_DIM = 100
+EMBEDDING_DIM = 100
 
 
 class PreTrainedEmbeddings(object):
@@ -41,10 +51,8 @@ class PreTrainedEmbeddings(object):
         word1 x1_0 x1_1 x1_2 x1_3 ... x1_N
         Args:
         embedding_file (str): location of the file
-        Returns:
-        instance of PretrainedEmbeddings
+        Returns: instance of PretrainedEmbeddings
         """
-
         word_to_index = {}
         word_vectors = []
         with open(embedding_file) as fp:
@@ -60,10 +68,8 @@ class PreTrainedEmbeddings(object):
         """
         Args:
         word (str)
-        Returns
-        an embedding (numpy.ndarray)
+        Returns an embedding (numpy.ndarray)
         """
-
         return self.word_vectors[self.word_to_index[word]]
 
     def get_closest_to_vector(self, vector, n=1):
@@ -99,10 +105,10 @@ class TextClassifierLSTM(torch.nn.Module):
         self.embeddings = nn.Embedding.from_pretrained(self.embedding_weights, freeze=True, padding_idx=0)
         # ------------------------------------------------------------------------------------------------------------
         self.vocab_size = len(vocab)
+        # self.embeddings = nn.Embedding(self.vocab_size, embedding_dim, padding_idx=0)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.dropout = nn.Dropout(dropout)
-        # self.embeddings = nn.Embedding(self.vocab_size, embedding_dim, padding_idx=0)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True,
                             dropout=dropout, num_layers=self.num_layers, bidirectional=True)
         # self.fc = nn.Linear(2*hidden_dim, num_classes)
@@ -145,8 +151,14 @@ def tokenize(text, tokenizer):
 def trim_rare_words(plots, tokenizer):
     # count number of occurences of each word
     counts = Counter()
-    for index, row in plots.iterrows():
-        counts.update(tokenize(row['Plot'], tokenizer))
+    if type(plots) == pd.core.frame.DataFrame:
+        for index, row in plots.iterrows():
+            counts.update(tokenize(row['Plot'], tokenizer))
+    elif type(plots) == list:
+        for row in plots:
+            counts.update(tokenize(row,  tokenizer))
+    else:
+        raise TypeError("Parameter 'plots' has to be either a non-nested list or a pandas Dataframe.")
     # deleting infrequent words
     print("num_words before:", len(counts.keys()))
     for word in list(counts):
@@ -167,7 +179,7 @@ def create_vocabulary(counts):
 
 
 # TODO: Adjust sentence length to max_sentence_length instead of N=70
-def encode_sentence(text, tokenizer, vocab2index, N=500):
+def encode_sentence(text, tokenizer, vocab2index, N=PLOT_LENGTH):
     tokenized = tokenize(text, tokenizer)
     encoded = np.zeros(N, dtype=int)
     enc1 = np.array([vocab2index.get(word, vocab2index["UNK"]) for word in tokenized])
@@ -231,37 +243,70 @@ def validation_metrics (model, valid_dl):
     return sum_loss/total, correct/total, sum_rmse/total
 
 
-MIN_COUNT = 3
-# ----------- Model variables -----------
-BATCH_SIZE = 16
-HIDDEN_DIM = 100
-EMBEDDING_DIM = 100
-
 tok = spacy.load('en_core_web_sm')
-counts = trim_rare_words(movies_df, tok)
+# |-----------------------------------------|
+# |  OPTION 1: GENRE CLASSIFICATION DATASET |
+# |-----------------------------------------|
+# counts = trim_rare_words(movies_df, tok)
+# word2idx = create_vocabulary(counts)
+# movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx)))
+# num_classes = len(shortlisted_genres)
+# print("number of classes %d" % num_classes)
+# X = list(movies_df['Plot_encoded'])
+# y = list(movies_df['genre_encoded'])
+# X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2)
+
+# |-----------------------------------------|
+# | OPTION 2: CAST CLASSIFICATION DATASET   |
+# |-----------------------------------------|
+X_train, y_train, = [], []
+with open('./plots_train.csv', "r") as f:
+    plot_reader = csv.reader(f, delimiter=',')
+    plot_reader = list(iter(plot_reader))
+    for row in plot_reader:
+        y_train.append(int(row[0]))
+        X_train.append(row[1])
+
+X_valid, y_valid, = [], []
+with open('./plots_valid.csv', "r") as f:
+    plot_reader = csv.reader(f, delimiter=',')
+    plot_reader = list(iter(plot_reader))
+    for row in plot_reader:
+        y_valid.append(int(row[0]))
+        X_valid.append(row[1])
+
+X_test, y_test, = [], []
+with open('./plots_test.csv', "r") as f:
+    plot_reader = csv.reader(f, delimiter=',')
+    plot_reader = list(iter(plot_reader))
+    for row in plot_reader:
+        y_test.append(int(row[0]))
+        X_test.append(row[1])
+
+num_classes = 10
+assert num_classes == len(set(y_train)) == len(set(y_valid)) == len(set(y_test))
+counts = trim_rare_words(X_train, tok)
 word2idx = create_vocabulary(counts)
-movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx)))
-num_classes = len(shortlisted_genres)
-print("number of classes %d" % num_classes)
-X = list(movies_df['Plot_encoded'])
-y = list(movies_df['genre_encoded'])
+encode = lambda x: np.array(encode_sentence(x, tok, word2idx))
+X_train_enc = [encode(x) for x in X_train]
+X_valid_enc = [encode(x) for x in X_valid]
+X_test_enc = [encode(x) for x in X_test]
 
-X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2)
 
-train_ds = PlotsDataset(X_train, y_train)
-valid_ds = PlotsDataset(X_valid, y_valid)
-
+# Set up Dataloaders
+train_ds = PlotsDataset(X_train_enc, y_train)
+valid_ds = PlotsDataset(X_valid_enc, y_valid)
 train_dl= DataLoader(train_ds,
     shuffle=True,
     batch_size=BATCH_SIZE)
-
-# train_dl = DataLoader()
 val_dl = DataLoader(valid_ds)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 model = TextClassifierLSTM(word2idx, EMBEDDING_DIM, HIDDEN_DIM, num_classes)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = torch.optim.Adam(parameters, lr=5e-3, weight_decay=5e-4)
 # optimizer = torch.optim.RMSprop(parameters, lr=5e-3, weight_decay=1e-3)
 train_model(model, train_dl, epochs=15)
+
+
+

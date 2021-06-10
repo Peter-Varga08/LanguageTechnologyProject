@@ -88,7 +88,7 @@ for name, lengths in plot_lengths.items():
 # 7) Filtering and Augmenting data:
 # - Discard each plot shorter than MIN_LENGTH
 # - Split up the plots to subplots based on MIN_LENGTH
-MIN_LENGTH = 500
+MIN_LENGTH = 1000
 plots_filtered = {label: [] for label in labels}
 for name in labels:
     for idx, plot in enumerate(plots[name]):
