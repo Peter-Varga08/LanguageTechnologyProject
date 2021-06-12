@@ -17,17 +17,17 @@ from sklearn.model_selection import train_test_split
 from dataloader_movies import movies_df, label_encoder, shortlisted_genres
 from annoy import AnnoyIndex
 from spacy.lang.en.examples import sentences
-
+import time
 
 # ----------- Pre-processing constants -----------
 MIN_COUNT = 3
 PLOT_LENGTH = 200
 # ----------- Model constants -----------
 BATCH_SIZE = 16
-HIDDEN_DIM = 100
-EMBEDDING_DIM = 100
+HIDDEN_DIM = 150
+EMBEDDING_DIM = 300
 
-
+data_loc = '/data/s3861023/ltp_data'
 class PreTrainedEmbeddings(object):
     def __init__(self, word_to_index, word_vectors):
         """
@@ -93,7 +93,7 @@ class TextClassifierLSTM(torch.nn.Module):
         # --------------------- Adding a Pretrained embedding layer to the network ---------------------
         assert embedding_dim in [50, 100, 200, 300]  # GloVe pre-trained embeddings only contain these dimensions
         self.embedding_dim = embedding_dim
-        self.glove_vocab = PreTrainedEmbeddings.from_embeddings_file(f'./data/glove.6B.{self.embedding_dim}d.txt')
+        self.glove_vocab = PreTrainedEmbeddings.from_embeddings_file(f'/data/s3861023/ltp_data/glove.6B.{self.embedding_dim}d.txt')
         self.vocab = vocab
         self.embedding_weights = np.zeros((len(self.vocab), self.embedding_dim))
         for i, word in enumerate(self.vocab):
@@ -192,16 +192,20 @@ def encode_sentence(text, tokenizer, vocab2index, N=PLOT_LENGTH):
 # |       Training & Evaluation          |
 # |--------------------------------------|
 # TODO: Make function to utilize GPU instead of CPU if GPU exists
-def train_model(model,train_dl, epochs=10):
-    model.train()
+def train_model(model,train_dl,device, epochs=10):
+    
     print("Training classifier...")
+    start_t = time.time()
     for epoch in range(epochs):
+        model.train()
+        epoch_t = time.time()
         sum_loss = 0.0
         total = 0
         correct = 0
         for x,y,l in train_dl:
             x = x.long()
             y = y.long()
+            x,y,l = x.to(device), y.to(device), l.to(device)
             y_pred = model(x, l)
             optimizer.zero_grad()
             loss = F.cross_entropy(y_pred, y)
@@ -213,18 +217,21 @@ def train_model(model,train_dl, epochs=10):
             
             correct += (preds == y).float().sum()
             # print(f"Epoch [{epoch}]: train loss {(sum_loss/total)}, train_acc: {correct/total}")
-        val_loss, val_acc, val_rmse = validation_metrics(model, val_dl)
+        val_loss, val_acc, val_rmse = validation_metrics(model, val_dl,device)
 
         # if epoch % 5 == 0:
+        print("Epoch time; ", time.time()-epoch_t)
         print(f"Epoch [{epoch}]:"
               f" train loss {round(float(sum_loss/total), 4)},"
               f" train_acc: {round(float(correct/total), 4)}",
               f" val loss {round(float(val_loss), 4)},"
               f" val accuracy {round(float(val_acc), 4)}")
         # print("Epoch [%d], train loss %.3f, , and val rmse %.3f" % (epoch, sum_loss/total, val_loss, val_acc, val_rmse))
+        # exit()
+    print("total time: ", start_t - time.time())
+    
 
-
-def validation_metrics (model, valid_dl):
+def validation_metrics (model, valid_dl,device):
     model.eval()
     correct = 0
     total = 0
@@ -233,6 +240,7 @@ def validation_metrics (model, valid_dl):
     for x, y, l in valid_dl:
         x = x.long()
         y = y.long()
+        x,y,l = x.to(device), y.to(device), l.to(device)
         y_hat = model(x, l)
         loss = F.cross_entropy(y_hat, y)
         preds = y_hat.argmax(dim=-1)
@@ -301,12 +309,16 @@ train_dl= DataLoader(train_ds,
     batch_size=BATCH_SIZE)
 val_dl = DataLoader(valid_ds)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 model = TextClassifierLSTM(word2idx, EMBEDDING_DIM, HIDDEN_DIM, num_classes)
 parameters = filter(lambda p: p.requires_grad, model.parameters())
 optimizer = torch.optim.Adam(parameters, lr=5e-3, weight_decay=5e-4)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+model.to(device)
+print("running on ", device)
 # optimizer = torch.optim.RMSprop(parameters, lr=5e-3, weight_decay=1e-3)
-train_model(model, train_dl, epochs=15)
+train_model(model, train_dl, device, epochs=15)
 
 
 

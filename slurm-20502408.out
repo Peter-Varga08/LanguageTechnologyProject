@@ -1,0 +1,61 @@
+Restoring modules from user's LTP
+Modules Loaded
+num_words before: 13855
+num_words after: 6113
+Training classifier...
+Epoch [0]: train loss 2.2665, train_acc: 0.1359  val loss 2.316, val accuracy 0.1439
+Epoch [1]: train loss 2.238, train_acc: 0.1625  val loss 2.2183, val accuracy 0.1136
+Epoch [2]: train loss 2.1522, train_acc: 0.1939  val loss 2.0614, val accuracy 0.1856
+Epoch [3]: train loss 2.0603, train_acc: 0.231  val loss 2.0555, val accuracy 0.197
+Epoch [4]: train loss 1.8732, train_acc: 0.2728  val loss 1.9952, val accuracy 0.1818
+Epoch [5]: train loss 1.766, train_acc: 0.308  val loss 1.9084, val accuracy 0.2008
+Epoch [6]: train loss 1.6478, train_acc: 0.3679  val loss 1.9609, val accuracy 0.2348
+Epoch [7]: train loss 1.5781, train_acc: 0.3869  val loss 1.935, val accuracy 0.2652
+Epoch [8]: train loss 1.4774, train_acc: 0.4449  val loss 2.0258, val accuracy 0.2538
+Epoch [9]: train loss 1.3612, train_acc: 0.4781  val loss 1.9538, val accuracy 0.3144
+Epoch [10]: train loss 1.211, train_acc: 0.5266  val loss 1.9851, val accuracy 0.2689
+Epoch [11]: train loss 1.1161, train_acc: 0.5703  val loss 1.9704, val accuracy 0.3182
+Epoch [12]: train loss 0.9689, train_acc: 0.6217  val loss 2.0062, val accuracy 0.3068
+Epoch [13]: train loss 0.864, train_acc: 0.6778  val loss 2.014, val accuracy 0.3295
+Epoch [14]: train loss 0.811, train_acc: 0.6996  val loss 2.071, val accuracy 0.3485
+
+
+###############################################################################
+Peregrine Cluster
+Job 20502408 for user 's3861023'
+Finished at: Fri Jun 11 14:03:37 CEST 2021
+
+Job details:
+============
+
+Job ID              : 20502408
+Name                : lstm_text_classification.sh
+User                : s3861023
+Partition           : gpu
+Nodes               : pg-gpu02
+Number of Nodes     : 1
+Cores               : 12
+State               : COMPLETED
+Submit              : 2021-06-11T13:38:09
+Start               : 2021-06-11T13:45:23
+End                 : 2021-06-11T14:03:37
+Reserved walltime   : 00:30:00
+Used walltime       : 00:18:14
+Used CPU time       : 00:46:56 (efficiency: 21.46%)
+% User (Computation): 83.23%
+% System (I/O)      : 16.77%
+Mem reserved        : 2000M/node
+Max Mem used        : 1.80G (pg-gpu02)
+Max Disk Write      : 20.48K (pg-gpu02)
+Max Disk Read       : 9.64M (pg-gpu02)
+Average GPU usage   : 14.1% (pg-gpu02)
+
+
+Acknowledgements:
+=================
+
+Please see this page for information about acknowledging Peregrine in your publications:
+
+https://wiki.hpc.rug.nl/peregrine/introduction/scientific_output
+
+################################################################################
