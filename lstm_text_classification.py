@@ -224,7 +224,7 @@ def train_model(model, train_dl, device, test_dl=None, epochs=10):
 
         train_accuracies.append(round(float(correct / total), 4))
         val_accuracies.append(round(float(val_acc), 4))
-        test_accuracies.append(round(float(test_acc)))
+        test_accuracies.append(round(float(test_acc), 4))
         if len(val_accuracies) > 10 and val_accuracies[-1] < val_accuracies[-10]:
             print("Early stopping criterion has been reached.")
             break

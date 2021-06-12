@@ -10,7 +10,7 @@ import torch.nn as nn
 import time
 from sklearn.preprocessing import LabelEncoder
 
-data_loc = "/data/s3861023/ltp_data"
+data_loc = "./data"
 movies_df = pd.read_csv(data_loc + "/wiki_movie_plots_deduped.csv")
 movies_df = movies_df[(movies_df["Origin/Ethnicity"]=="American") | (movies_df["Origin/Ethnicity"]=="British")]
 movies_df = movies_df[["Plot", "Genre"]]
