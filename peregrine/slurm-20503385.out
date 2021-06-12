@@ -1,0 +1,76 @@
+Restoring modules from user's LTP
+Modules Loaded
+num_words before: 13855
+num_words after: 6113
+Training classifier...
+Epoch [0]: train loss 2.2617, train_acc: 0.1502  val loss 2.2348, val accuracy 0.1364
+Epoch [1]: train loss 2.1985, train_acc: 0.1882  val loss 2.2256, val accuracy 0.1667
+Epoch [2]: train loss 2.1927, train_acc: 0.2006  val loss 2.1125, val accuracy 0.2235
+Epoch [3]: train loss 2.0513, train_acc: 0.2586  val loss 2.0292, val accuracy 0.2311
+Epoch [4]: train loss 1.919, train_acc: 0.2937  val loss 2.0136, val accuracy 0.2652
+Epoch [5]: train loss 1.7644, train_acc: 0.3821  val loss 2.2844, val accuracy 0.197
+Epoch [6]: train loss 1.737, train_acc: 0.3774  val loss 2.0298, val accuracy 0.2689
+Epoch [7]: train loss 1.5396, train_acc: 0.4354  val loss 1.8653, val accuracy 0.3295
+Epoch [8]: train loss 1.3267, train_acc: 0.5095  val loss 1.8526, val accuracy 0.3561
+Epoch [9]: train loss 1.2788, train_acc: 0.5333  val loss 1.8634, val accuracy 0.2803
+Epoch [10]: train loss 1.0496, train_acc: 0.6055  val loss 1.8014, val accuracy 0.3712
+Epoch [11]: train loss 0.945, train_acc: 0.6492  val loss 2.0421, val accuracy 0.3333
+Epoch [12]: train loss 0.8193, train_acc: 0.7082  val loss 2.1071, val accuracy 0.3485
+Epoch [13]: train loss 0.666, train_acc: 0.7719  val loss 2.1242, val accuracy 0.3636
+Epoch [14]: train loss 0.5879, train_acc: 0.7909  val loss 2.3407, val accuracy 0.3106
+Epoch [15]: train loss 0.565, train_acc: 0.8023  val loss 2.2174, val accuracy 0.3674
+Epoch [16]: train loss 0.4864, train_acc: 0.8317  val loss 2.3289, val accuracy 0.3523
+Epoch [17]: train loss 0.3788, train_acc: 0.8622  val loss 2.3765, val accuracy 0.3598
+Epoch [18]: train loss 0.3422, train_acc: 0.8878  val loss 2.5936, val accuracy 0.3788
+Epoch [19]: train loss 0.3084, train_acc: 0.9011  val loss 2.4525, val accuracy 0.3902
+Epoch [20]: train loss 0.2472, train_acc: 0.9125  val loss 2.5899, val accuracy 0.3864
+Epoch [21]: train loss 0.2187, train_acc: 0.9211  val loss 2.5842, val accuracy 0.375
+Epoch [22]: train loss 0.2829, train_acc: 0.8916  val loss 2.7539, val accuracy 0.3712
+Epoch [23]: train loss 0.3465, train_acc: 0.8764  val loss 2.5998, val accuracy 0.3788
+Epoch [24]: train loss 0.2983, train_acc: 0.8916  val loss 2.5607, val accuracy 0.3712
+Epoch [25]: train loss 0.2835, train_acc: 0.903  val loss 2.5839, val accuracy 0.3864
+Epoch [26]: train loss 0.2193, train_acc: 0.9287  val loss 2.7018, val accuracy 0.3561
+Epoch [27]: train loss 0.2268, train_acc: 0.9106  val loss 2.8384, val accuracy 0.375
+Epoch [28]: train loss 0.2184, train_acc: 0.9202  val loss 2.6942, val accuracy 0.3598
+Epoch [29]: train loss 0.1712, train_acc: 0.9259  val loss 2.6821, val accuracy 0.3864
+
+
+###############################################################################
+Peregrine Cluster
+Job 20503385 for user 's3861023'
+Finished at: Fri Jun 11 15:42:19 CEST 2021
+
+Job details:
+============
+
+Job ID              : 20503385
+Name                : lstm_text_classification.sh
+User                : s3861023
+Partition           : gpu
+Nodes               : pg-gpu14
+Number of Nodes     : 1
+Cores               : 12
+State               : COMPLETED
+Submit              : 2021-06-11T14:16:09
+Start               : 2021-06-11T14:47:43
+End                 : 2021-06-11T15:42:19
+Reserved walltime   : 01:00:00
+Used walltime       : 00:54:36
+Used CPU time       : 02:28:28 (efficiency: 22.66%)
+% User (Computation): 68.66%
+% System (I/O)      : 31.34%
+Mem reserved        : 3000M/node
+Max Mem used        : 1.88G (pg-gpu14)
+Max Disk Write      : 20.48K (pg-gpu14)
+Max Disk Read       : 9.62M (pg-gpu14)
+Average GPU usage   : 0.7% (pg-gpu14)
+
+
+Acknowledgements:
+=================
+
+Please see this page for information about acknowledging Peregrine in your publications:
+
+https://wiki.hpc.rug.nl/peregrine/introduction/scientific_output
+
+################################################################################

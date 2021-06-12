@@ -1,0 +1,72 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"LTP"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore-cache load "LTP"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+Modules Loaded
+num_words before: 13855
+num_words after: 6113
+Training classifier...
+Epoch [0]: train loss 2.2562, train_acc: 0.1445  val loss 2.1913, val accuracy 0.1515
+Epoch [1]: train loss 2.1803, train_acc: 0.2015  val loss 2.1977, val accuracy 0.1629
+Epoch [2]: train loss 2.0478, train_acc: 0.2424  val loss 2.042, val accuracy 0.25
+Epoch [3]: train loss 1.8494, train_acc: 0.3032  val loss 1.9611, val accuracy 0.2462
+Epoch [4]: train loss 1.6962, train_acc: 0.365  val loss 1.8446, val accuracy 0.2992
+Epoch [5]: train loss 1.5244, train_acc: 0.4325  val loss 1.7641, val accuracy 0.3182
+Epoch [6]: train loss 1.364, train_acc: 0.4895  val loss 1.786, val accuracy 0.322
+Epoch [7]: train loss 1.1695, train_acc: 0.5922  val loss 1.8679, val accuracy 0.3636
+Epoch [8]: train loss 1.0584, train_acc: 0.6245  val loss 1.8816, val accuracy 0.3333
+Epoch [9]: train loss 0.9229, train_acc: 0.6692  val loss 1.8893, val accuracy 0.3864
+Epoch [10]: train loss 0.7523, train_acc: 0.7281  val loss 2.0551, val accuracy 0.3636
+Epoch [11]: train loss 0.6615, train_acc: 0.7633  val loss 2.1173, val accuracy 0.3674
+Epoch [12]: train loss 0.5534, train_acc: 0.789  val loss 2.3065, val accuracy 0.3674
+Epoch [13]: train loss 0.5223, train_acc: 0.8251  val loss 2.0802, val accuracy 0.428
+Epoch [14]: train loss 0.3846, train_acc: 0.8698  val loss 2.2169, val accuracy 0.447
+
+
+###############################################################################
+Peregrine Cluster
+Job 20502375 for user 's3861023'
+Finished at: Fri Jun 11 14:06:34 CEST 2021
+
+Job details:
+============
+
+Job ID              : 20502375
+Name                : ltp_batch.sh
+User                : s3861023
+Partition           : gpu
+Nodes               : pg-gpu14
+Number of Nodes     : 1
+Cores               : 12
+State               : COMPLETED
+Submit              : 2021-06-11T13:24:14
+Start               : 2021-06-11T13:39:00
+End                 : 2021-06-11T14:06:34
+Reserved walltime   : 00:30:00
+Used walltime       : 00:27:34
+Used CPU time       : 01:11:51 (efficiency: 21.72%)
+% User (Computation): 66.12%
+% System (I/O)      : 33.89%
+Mem reserved        : 2000M/node
+Max Mem used        : 1.69G (pg-gpu14)
+Max Disk Write      : 0.00  (pg-gpu14)
+Max Disk Read       : 5.22M (pg-gpu14)
+Average GPU usage   : 0.4% (pg-gpu14)
+
+
+Acknowledgements:
+=================
+
+Please see this page for information about acknowledging Peregrine in your publications:
+
+https://wiki.hpc.rug.nl/peregrine/introduction/scientific_output
+
+################################################################################

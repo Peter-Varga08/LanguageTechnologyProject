@@ -9,7 +9,9 @@ import torch
 import torch.nn as nn
 import time
 from sklearn.preprocessing import LabelEncoder
-movies_df = pd.read_csv("./data/wiki_movie_plots_deduped.csv")
+
+data_loc = "/data/s3861023/ltp_data"
+movies_df = pd.read_csv(data_loc + "/wiki_movie_plots_deduped.csv")
 movies_df = movies_df[(movies_df["Origin/Ethnicity"]=="American") | (movies_df["Origin/Ethnicity"]=="British")]
 movies_df = movies_df[["Plot", "Genre"]]
 drop_indices = movies_df[movies_df["Genre"] == "unknown" ].index
@@ -41,7 +43,7 @@ class movie_dataset(Dataset):
 
 
         label_encoder = LabelEncoder()
-        movies_df = pd.read_csv("./data/wiki_movie_plots_deduped.csv")
+        movies_df = pd.read_csv(data_loc + "/ltp_data/wiki_movie_plots_deduped.csv")
         movies_df = movies_df[(movies_df["Origin/Ethnicity"]=="American") | (movies_df["Origin/Ethnicity"]=="British")]
         movies_df = movies_df[["Plot", "Genre"]]
         drop_indices = movies_df[movies_df["Genre"] == "unknown" ].index

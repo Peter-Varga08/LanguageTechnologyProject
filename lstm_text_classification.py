@@ -374,4 +374,3 @@ for EMBEDDING_DIM in embeddings:
         with open(f"TEST_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]", "w") as f:
             for value in test_accuracies:
                 f.write(f"{str(value)}\n")
-
