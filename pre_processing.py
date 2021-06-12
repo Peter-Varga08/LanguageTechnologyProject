@@ -1,5 +1,6 @@
 import csv
 import pandas as pd
+import codecs
 from sklearn.model_selection import train_test_split
 
 
@@ -56,7 +57,7 @@ for key in sorted_keys:
     sorted_names[key] = total_names[key]
 
 # Sanity check: no invalid name should occur
-print("Top 15 names:", list(sorted_names.keys())[0:15])
+print("Top 10 names:", list(sorted_names.keys())[0:10])
 
 # 4) Get all movie plots
 plots = {name: [] for name in total_names_list}
@@ -96,9 +97,6 @@ for name in labels:
             for j in range(max_length//MIN_LENGTH):  # number of slices available within current plot
                 if len(plot[0 + j*MIN_LENGTH: MIN_LENGTH*(j+1)]) == MIN_LENGTH:
                     plots_filtered[name].append(plot[0 + j*MIN_LENGTH: MIN_LENGTH*(j+1)])
-                # else:
-                #     plots_filtered[name].append(plot[0 + j*1000:])
-                #     break
 
 
 # 8) Train/Valid/Test split
@@ -114,17 +112,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # 8/B) Split data to train and validation sets
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
-with open('plots_train.csv', 'w') as f:
+output_path = f'./data/{MIN_LENGTH}/'
+with open(output_path + 'plots_train.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_train, y_train):
         train_writer.writerow([y, x])
 
-with open('plots_valid.csv', 'w') as f:
+with open(output_path + 'plots_valid.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_val, y_val):
         train_writer.writerow([y, x])
 
-with open('plots_test.csv', 'w') as f:
+with open(output_path + 'plots_test.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_test, y_test):
         train_writer.writerow([y, x])
