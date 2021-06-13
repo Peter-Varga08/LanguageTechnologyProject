@@ -394,9 +394,9 @@ else:
         print("Training model")
         _, _ = train_model(model, train_dl, device, epochs=50, testing=True)
         loss, acc, predictions, ground_truths = test_model(model, test_dl, device)
-        test_accuracies.append(acc)
-        test_predictions.append(predictions)
-        test_ground_truths.append(ground_truths)
+        test_accuracies.append(acc.item())
+        test_predictions.extend(predictions)
+        test_ground_truths.extend(ground_truths)
 
     # Plot confusion matrix
     conf_matrix = confusion_matrix(test_ground_truths, test_predictions)
@@ -418,6 +418,8 @@ else:
     fig.savefig(f'cm_{title}.png')
 
     test_acc = np.mean(test_accuracies)
+    print("test accuracy:", test_acc)
     with open(f"TEST_EMBEDDING_DIM:[{embeddings[0]}]_HIDDEN_DIM:[{embeddings[0] // 2}]_BATCH_SIZE:[{batch_sizes[0]}]",
               "w") as f:
-        f.write(f"{str(test_acc)}\n")
+        for acc in test_accuracies:
+            f.write(f"{str(acc)}\n")
