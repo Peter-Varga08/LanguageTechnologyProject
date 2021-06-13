@@ -23,6 +23,7 @@ from dataloader_movies import movies_df, shortlisted_genres
 MIN_COUNT = 3
 PLOT_LENGTH = 200
 
+
 class PreTrainedEmbeddings(object):
     def __init__(self, word_to_index, word_vectors):
         """
@@ -166,14 +167,14 @@ def encode_sentence(text, tokenizer, vocab2index, N):
 # |--------------------------------------|
 # |       Training & Evaluation          |
 # |--------------------------------------|
-def train_model(model, train_dl, device, test_dl=None, epochs=10):
+def train_model(model, train_dl, device, epochs=10, testing=False):
     # print("Training classifier...")
     start_t = time.time()
     train_accuracies = []
     val_accuracies = []
-    test_accuracies = []
-    test_predictions = []
-    test_ground_truths = []
+    best_val_acc = 0
+    best_train_acc = 0
+    es = 10  # early stopping criterion
     for epoch in range(epochs):
         model.train()
         epoch_t = time.time()
@@ -192,185 +193,231 @@ def train_model(model, train_dl, device, test_dl=None, epochs=10):
             optimizer.step()
             sum_loss += loss.item() * y.shape[0]
             total += y.shape[0]
-
             correct += (preds == y).float().sum()
-            # print(f"Epoch [{epoch}]: train loss {(sum_loss/total)}, train_acc: {correct/total}")
-        results = evaluation(model, val_dl, device, test_dl)
+        train_acc = round(float(correct / total), 4)
+        train_accuracies.append(train_acc)
 
-        if len(results) == 2:  # both validation and testing took place
-            val_loss = results[0][0]
-            val_acc = results[0][1].item()
-            test_loss = results[1][0]
-            test_acc = results[1][1].item()
-            predictions = results[1][2]
-            ground_truths = results[1][3]
-            test_predictions.extend(predictions)
-            test_ground_truths.extend(ground_truths)
+        if not testing:
+            val_loss, val_acc = validation_metrics(model, val_dl, device)
+            val_accuracies.append(round(float(val_acc), 4))
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+            # print("Epoch time; ", time.time() - epoch_t)
+            print(f"Epoch [{epoch}]:"
+                  f" train loss {round(float(sum_loss / total), 4)},"
+                  f" train_acc: {round(float(correct / total), 4)}",
+                  f" | val loss {round(float(val_loss), 4)},"
+                  f"  val accuracy {round(float(val_acc), 4)}",
+                  )
+            if len(val_accuracies) > es and val_accuracies[-1] < best_val_acc \
+                    and len(val_accuracies) - es > val_accuracies.index(best_val_acc):
+                print("Early stopping criterion has been reached.")
+                break
         else:
-            val_loss = results[0]
-            val_acc = results[1].item()
-            test_loss = -1
-            test_acc = -1
-
-        # print("Epoch time; ", time.time() - epoch_t)
-        print(f"Epoch [{epoch}]:"
-              f" train loss {round(float(sum_loss / total), 4)},"
-              f" train_acc: {round(float(correct / total), 4)}",
-              f" | val loss {round(float(val_loss), 4)},"
-              f"  val accuracy {round(float(val_acc), 4)}",
-              f" | test loss {round(float(test_loss), 4)},"
-              f" test accuracy {round(float(test_acc), 4)}",
-              )
-
-        train_accuracies.append(round(float(correct / total), 4))
-        val_accuracies.append(round(float(val_acc), 4))
-        test_accuracies.append(round(float(test_acc), 4))
-        if len(val_accuracies) > 10 and val_accuracies[-1] < val_accuracies[-10]:
-            print("Early stopping criterion has been reached.")
-            break
+            if train_acc > best_train_acc:
+                best_train_acc = train_acc
+            print(f"Epoch [{epoch}]:"
+                  f" train loss {round(float(sum_loss / total), 4)},"
+                  f" train_acc: {round(float(correct / total), 4)}",
+                  )
+            if len(train_accuracies) > es and train_accuracies[-1] < best_train_acc \
+                    and len(train_accuracies) - es > train_accuracies.index(best_train_acc):
+                print("Early stopping criterion has been reached.")
+                break
 
     print("total time: ", time.time() - start_t)
-    return train_accuracies, val_accuracies, test_accuracies, test_predictions, test_ground_truths
+    return train_accuracies, val_accuracies
 
 
-def evaluation(model, valid_dl, device, test_dl=None):
+def validation_metrics(model, valid_dl, device):
     model.eval()
+    correct = 0
+    total = 0
+    sum_loss = 0.0
+    for x, y, l in valid_dl:
+        # evaluation data
+        x = x.long()
+        y = y.long()
+        x, y = x.to(device), y.to(device)
+        y_hat = model(x, l)
+        loss = F.cross_entropy(y_hat, y)
+        preds = y_hat.argmax(dim=-1)
+        correct += (preds == y).float().sum()
+        total += y.shape[0]
+        sum_loss += loss.item() * y.shape[0]
+    return sum_loss / total, correct / total
 
-    def run_evaluation(dataloader):
-        correct = 0
-        total = 0
-        sum_loss = 0.0
-        predictions = []
-        ground_truths = []
-        for x, y, l in dataloader:
-            # evaluation data
-            x = x.long()
-            y = y.long()
-            x, y = x.to(device), y.to(device)
-            y_hat = model(x, l)
-            loss = F.cross_entropy(y_hat, y)
-            preds = y_hat.argmax(dim=-1)
-            correct += (preds == y).float().sum()
-            total += y.shape[0]
-            sum_loss += loss.item() * y.shape[0]
-            # confusion matrix data
-            predictions.append(preds.item())
-            ground_truths.append(y.item())
-        return [sum_loss/total, correct/total, predictions, ground_truths]
 
-    validation_results = run_evaluation(valid_dl)
-    if test_dl:
-        test_results = run_evaluation(test_dl)
-        return validation_results, test_results
-    return validation_results
+def test_model(model, test_dl, device):
+    model.eval()
+    correct = 0
+    total = 0
+    sum_loss = 0.0
+    predictions = []
+    ground_truths = []
+    for x, y, l in test_dl:
+        # evaluation data
+        x = x.long()
+        y = y.long()
+        x, y = x.to(device), y.to(device)
+        y_hat = model(x, l)
+        preds = y_hat.argmax(dim=-1)
+        correct += (preds == y).float().sum()
+        total += y.shape[0]
+        # confusion matrix data
+        predictions.append(preds.item())
+        ground_truths.append(y.item())
+    print(f" test_acc: {round(float(correct / total), 4)}")
+    return sum_loss / total, correct / total, predictions, ground_truths
 
 
 tok = spacy.load('en_core_web_sm')
 # |-----------------------------------------|
 # |  OPTION 1: GENRE CLASSIFICATION DATASET |
 # |-----------------------------------------|
-# counts = trim_rare_words(movies_df, tok)
-# word2idx = create_vocabulary(counts)
-# movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH)))
-# num_classes = len(shortlisted_genres)
-# title = 'Genre'
-# print("number of classes %d" % num_classes)
-# X = list(movies_df['Plot_encoded'])
-# y = list(movies_df['genre_encoded'])
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-# X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+counts = trim_rare_words(movies_df, tok)
+word2idx = create_vocabulary(counts)
+movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH)))
+num_classes = len(shortlisted_genres)
+title = 'Genre'
+print("number of classes %d" % num_classes)
+X = list(movies_df['Plot_encoded'])
+y = list(movies_df['genre_encoded'])
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+# -----------------------------------------------------------
 
 # |-----------------------------------------|
 # | OPTION 2: CAST CLASSIFICATION DATASET   |
 # |-----------------------------------------|
-X_train, y_train, = [], []
-with open('./data/500/plots_train.csv', "r") as f:
-    plot_reader = csv.reader(f, delimiter=',')
-    plot_reader = list(iter(plot_reader))
-    for row in plot_reader:
-        y_train.append(int(row[0]))
-        X_train.append(row[1])
-
-X_valid, y_valid, = [], []
-with open('./data/500/plots_valid.csv', "r") as f:
-    plot_reader = csv.reader(f, delimiter=',')
-    plot_reader = list(iter(plot_reader))
-    for row in plot_reader:
-        y_valid.append(int(row[0]))
-        X_valid.append(row[1])
-
-X_test, y_test, = [], []
-with open('./data/500/plots_test.csv', "r") as f:
-    plot_reader = csv.reader(f, delimiter=',')
-    plot_reader = list(iter(plot_reader))
-    for row in plot_reader:
-        y_test.append(int(row[0]))
-        X_test.append(row[1])
-
-num_classes = 10
-title = 'Cast'
-assert num_classes == len(set(y_train)) == len(set(y_valid)) == len(set(y_test))
-counts = trim_rare_words(X_train, tok)
-word2idx = create_vocabulary(counts)
-encode = lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH))
-X_train = [encode(x) for x in X_train]  # encoded
-X_valid = [encode(x) for x in X_valid]  # encoded
-X_test = [encode(x) for x in X_test]  # encoded
-
+# X_train, y_train, = [], []
+# with open('./data/1000/plots_train.csv', "r") as f:
+#     plot_reader = csv.reader(f, delimiter=',')
+#     plot_reader = list(iter(plot_reader))
+#     for row in plot_reader:
+#         y_train.append(int(row[0]))
+#         X_train.append(row[1])
+#
+# X_valid, y_valid, = [], []
+# with open('./data/1000/plots_valid.csv', "r") as f:
+#     plot_reader = csv.reader(f, delimiter=',')
+#     plot_reader = list(iter(plot_reader))
+#     for row in plot_reader:
+#         y_valid.append(int(row[0]))
+#         X_valid.append(row[1])
+#
+# X_test, y_test, = [], []
+# with open('./data/1000/plots_test.csv', "r") as f:
+#     plot_reader = csv.reader(f, delimiter=',')
+#     plot_reader = list(iter(plot_reader))
+#     for row in plot_reader:
+#         y_test.append(int(row[0]))
+#         X_test.append(row[1])
+#
+# num_classes = 10
+# title = 'Cast'
+# assert num_classes == len(set(y_train)) == len(set(y_valid)) == len(set(y_test))
+# counts = trim_rare_words(X_train, tok)
+# word2idx = create_vocabulary(counts)
+# encode = lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH))
+# X_train = [encode(x) for x in X_train]  # encoded
+# X_valid = [encode(x) for x in X_valid]  # encoded
+# X_test = [encode(x) for x in X_test]  # encoded
+# -----------------------------------------------------------
 
 # ----------- Parameter sweep -----------
+# training = True
 # batch_sizes = [16, 32, 64]
 # embeddings = [50, 100, 200, 300]
-# ----------- Test run --------------
-batch_sizes = [32]
-embeddings = [300]
+# ----------- Best parameters for test run --------------
+training = False
+batch_sizes = [16]
+embeddings = [50]
 
-for EMBEDDING_DIM in embeddings:
-    HIDDEN_DIM = int(EMBEDDING_DIM // 2)
-    for BATCH_SIZE in batch_sizes:
-        print(f"\nEMBEDDING_DIM: [{EMBEDDING_DIM}]; HIDDEN_DIM: [{HIDDEN_DIM}]; BATCH_SIZE: [{BATCH_SIZE}]")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if training:
+    for EMBEDDING_DIM in embeddings:
+        HIDDEN_DIM = int(EMBEDDING_DIM // 2)
+        for BATCH_SIZE in batch_sizes:
+            print(f"\nEMBEDDING_DIM: [{EMBEDDING_DIM}]; HIDDEN_DIM: [{HIDDEN_DIM}]; BATCH_SIZE: [{BATCH_SIZE}]")
+            # Set up Dataloaders
+            train_ds = PlotsDataset(X_train, y_train)
+            valid_ds = PlotsDataset(X_valid, y_valid)
+            train_dl = DataLoader(train_ds,
+                                  shuffle=True,
+                                  batch_size=BATCH_SIZE)
+            val_dl = DataLoader(valid_ds)
+            # Train model with Adam optimizer for 50 epochs
+            model = TextClassifierLSTM(word2idx, EMBEDDING_DIM, HIDDEN_DIM, num_classes)
+            parameters = filter(lambda p: p.requires_grad, model.parameters())
+            optimizer = torch.optim.Adam(parameters, lr=5e-3, weight_decay=5e-4)
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            # print("running on ", device)
+            model.to(device)
+            train_accuracies, val_accuracies = train_model(model, train_dl, device, epochs=50)
 
-        # Set up Dataloaders
+            # Write results
+            with open(f"TRAIN_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]",
+                      "w") as f:
+                for value in train_accuracies:
+                    f.write(f"{str(value)}\n")
+            with open(f"VALID_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]",
+                      "w") as f:
+                for value in val_accuracies:
+                    f.write(f"{str(value)}\n")
+
+else:
+    # Run test 10 times and average them
+    test_accuracies = []
+    test_ground_truths = []
+    test_predictions = []
+
+    for i in range(10):
+        print(f"\nTEST RUN {i + 1}")
+        print("*" * 30)
+        X_train.extend(X_valid)
+        y_train.extend(y_valid)
+        print("Initializing dataloaders.")
         train_ds = PlotsDataset(X_train, y_train)
-        valid_ds = PlotsDataset(X_valid, y_valid)
         test_ds = PlotsDataset(X_test, y_test)
         train_dl = DataLoader(train_ds,
                               shuffle=True,
-                              batch_size=BATCH_SIZE)
-        val_dl = DataLoader(valid_ds)
+                              batch_size=batch_sizes[0])
         test_dl = DataLoader(test_ds)
-
+        print("Creating model")
         # Train model with Adam optimizer for 50 epochs
-        model = TextClassifierLSTM(word2idx, EMBEDDING_DIM, HIDDEN_DIM, num_classes)
+        model = TextClassifierLSTM(word2idx, embeddings[0], embeddings[0] // 2, num_classes)
         parameters = filter(lambda p: p.requires_grad, model.parameters())
         optimizer = torch.optim.Adam(parameters, lr=5e-3, weight_decay=5e-4)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         # print("running on ", device)
         model.to(device)
-        train_accuracies, val_accuracies, test_accuracies, test_predictions, test_ground_truths = train_model(model, train_dl, device, epochs=50, test_dl=test_dl)
+        print("Training model")
+        _, _ = train_model(model, train_dl, device, epochs=50, testing=True)
+        loss, acc, predictions, ground_truths = test_model(model, test_dl, device)
+        test_accuracies.append(acc)
+        test_predictions.append(predictions)
+        test_ground_truths.append(ground_truths)
 
-        # Plot confusion matrix if test dataset was used
-        if len(test_predictions) > 1:
-            conf_matrix = confusion_matrix(test_ground_truths, test_predictions)
-            plt.imshow(conf_matrix, interpolation='None', cmap=plt.cm.Wistia)
-            plt.title(f'{title} prediction Confusion Matrix - Test data')
-            plt.ylabel('True label')
-            plt.xlabel('Predicted label')
-            ticks = list(range(num_classes))
-            plt.yticks(ticks)
-            plt.xticks(ticks)
-            for i in range(num_classes):
-                for j in range(num_classes):
-                    plt.text(j-0.5, i, str(conf_matrix[i][j]))
-            plt.show()
+    # Plot confusion matrix
+    conf_matrix = confusion_matrix(test_ground_truths, test_predictions)
+    cm_sum = np.sum(conf_matrix)
+    conf_matrix_norm = [[round(j / cm_sum, 4) for j in i] for i in conf_matrix]
+    fig = plt.figure(figsize=(16, 12))
+    plt.imshow(conf_matrix_norm, interpolation='None', cmap="YlGnBu")
+    plt.title(f'{title} prediction Confusion Matrix')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    ticks = list(range(num_classes))
+    plt.yticks(ticks)
+    plt.xticks(ticks)
+    plt.colorbar()
+    for i in range(num_classes):
+        for j in range(num_classes):
+            plt.text(j - 0.5, i, str(conf_matrix_norm[i][j]))
+    plt.show()
+    fig.savefig(f'cm_{title}.png')
 
-        # Write results
-        with open(f"TRAIN_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]", "w") as f:
-            for value in train_accuracies:
-                f.write(f"{str(value)}\n")
-        with open(f"VALID_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]", "w") as f:
-            for value in val_accuracies:
-                f.write(f"{str(value)}\n")
-        with open(f"TEST_EMBEDDING_DIM:[{EMBEDDING_DIM}]_HIDDEN_DIM:[{HIDDEN_DIM}]_BATCH_SIZE:[{BATCH_SIZE}]", "w") as f:
-            for value in test_accuracies:
-                f.write(f"{str(value)}\n")
+    test_acc = np.mean(test_accuracies)
+    with open(f"TEST_EMBEDDING_DIM:[{embeddings[0]}]_HIDDEN_DIM:[{embeddings[0] // 2}]_BATCH_SIZE:[{batch_sizes[0]}]",
+              "w") as f:
+        f.write(f"{str(test_acc)}\n")
