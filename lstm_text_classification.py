@@ -330,9 +330,15 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_siz
 # batch_sizes = [16, 32, 64]
 # embeddings = [50, 100, 200, 300]
 # ----------- Best parameters for test run --------------
+# if training is True, validation, with early stopping criterion based on the validation accuracy, will take place in each epoch,
+# otherwise just keeps training with early stopping criterion being based on the training accuracy
 training = False
+# for genre classification
 batch_sizes = [16]
 embeddings = [50]
+# for cast classification
+# batch_sizes = [32]
+# embeddings = [200]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if training:

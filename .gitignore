@@ -1,5 +1,6 @@
 # Dataset
-data/
+data_for_development/
+data/glove*
 
 # Random stuff
 .idea/
