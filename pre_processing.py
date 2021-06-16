@@ -1,6 +1,6 @@
 import csv
 import pandas as pd
-import codecs
+import re
 from sklearn.model_selection import train_test_split
 
 
@@ -98,12 +98,20 @@ for name in labels:
                 if len(plot[0 + j*MIN_LENGTH: MIN_LENGTH*(j+1)]) == MIN_LENGTH:
                     plots_filtered[name].append(plot[0 + j*MIN_LENGTH: MIN_LENGTH*(j+1)])
 
+# 7B) Mask the labels within the plots
+add_parenthesis = lambda name: f'({name})'
+plots_masked = {name:[] for name in plots_filtered}
+for name in plots_filtered:
+    for i in range(len(plots_filtered[name])):
+        names = add_parenthesis(name) + "|" + '|'.join([add_parenthesis(name) for name in name.split()])
+        patterns = re.compile(names)
+        plots_masked[name].append(re.sub(patterns, 'UNK', re.sub(patterns, 'UNK', plots_filtered[name][i])))
 
 # 8) Train/Valid/Test split
 X = []
 y = []
-for idx, name in enumerate(plots_filtered):
-    for plot in plots_filtered[name]:
+for idx, name in enumerate(plots_masked):
+    for plot in plots_masked[name]:
         X.append(plot)
         y.append(idx)
 
@@ -112,18 +120,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # 8/B) Split data to train and validation sets
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
-output_path = f'./data/{MIN_LENGTH}/'
-with open(output_path + 'plots_train.csv', 'w') as f:
+output_path = f'./data/'
+with open(output_path + 'plots_masked_train.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_train, y_train):
         train_writer.writerow([y, x])
 
-with open(output_path + 'plots_valid.csv', 'w') as f:
+with open(output_path + 'plots_masked_valid.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_val, y_val):
         train_writer.writerow([y, x])
 
-with open(output_path + 'plots_test.csv', 'w') as f:
+with open(output_path + 'plots_masked_test.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_test, y_test):
         train_writer.writerow([y, x])
