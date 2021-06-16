@@ -22,6 +22,7 @@ movies_df["Genre"].replace({"sci-fi": "science fiction", "romantic comedy": "rom
 
 # Choosing movie genres based on their frequency
 shortlisted_genres = movies_df["Genre"].value_counts().reset_index(name="count").query("count > 200")["index"].tolist()
+# print("shortlisted_genres", shortlisted_genres)
 movies_df = movies_df[movies_df["Genre"].isin(shortlisted_genres)].reset_index(drop=True)
 
 # Shuffle DataFrame
