@@ -2,6 +2,7 @@ import csv
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
+import argparse
 
 
 def split_names(name):
@@ -14,6 +15,11 @@ def split_names(name):
         names = name.split('\r\n')
     return names
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-masking', '--add_masking', help="Whether to include masking in the pre-processing or not",
+                    type=bool, default=False)
+args = vars(parser.parse_args())
 
 data = pd.read_csv('data/wiki_movie_plots_deduped.csv')
 print("Amount of movies in entire dataset:", len(data))
@@ -99,21 +105,31 @@ for name in labels:
                     plots_filtered[name].append(plot[0 + j*MIN_LENGTH: MIN_LENGTH*(j+1)])
 
 # 7B) Mask the labels within the plots
-add_parenthesis = lambda name: f'({name})'
-plots_masked = {name:[] for name in plots_filtered}
-for name in plots_filtered:
-    for i in range(len(plots_filtered[name])):
-        names = add_parenthesis(name) + "|" + '|'.join([add_parenthesis(name) for name in name.split()])
-        patterns = re.compile(names)
-        plots_masked[name].append(re.sub(patterns, 'UNK', re.sub(patterns, 'UNK', plots_filtered[name][i])))
-
-# 8) Train/Valid/Test split
-X = []
-y = []
-for idx, name in enumerate(plots_masked):
-    for plot in plots_masked[name]:
-        X.append(plot)
-        y.append(idx)
+if args.get('add_masking'):
+    print("Applying masking...")
+    add_parenthesis = lambda name: f'({name})'
+    plots_masked = {name:[] for name in plots_filtered}
+    for name in plots_filtered:
+        for i in range(len(plots_filtered[name])):
+            names = add_parenthesis(name) + "|" + '|'.join([add_parenthesis(name) for name in name.split()])
+            patterns = re.compile(names)
+            plots_masked[name].append(re.sub(patterns, 'UNK', re.sub(patterns, 'UNK', plots_filtered[name][i])))
+    # 8) Train/Valid/Test split
+    X = []
+    y = []
+    for idx, name in enumerate(plots_masked):
+        for plot in plots_masked[name]:
+            X.append(plot)
+            y.append(idx)
+else:
+    print("Skipping masking...")
+    # 8) Train/Valid/Test split
+    X = []
+    y = []
+    for idx, name in enumerate(plots_filtered):
+        for plot in plots_filtered[name]:
+            X.append(plot)
+            y.append(idx)
 
 # 8/A) Split data to train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -121,17 +137,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
 output_path = f'./data/'
-with open(output_path + 'plots_masked_train.csv', 'w') as f:
+with open(output_path + f'plots_{"masked_" if args.get("add_masking") else ""}train.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_train, y_train):
         train_writer.writerow([y, x])
 
-with open(output_path + 'plots_masked_valid.csv', 'w') as f:
+with open(output_path + f'plots_{"masked_" if args.get("add_masking") else ""}valid.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_val, y_val):
         train_writer.writerow([y, x])
 
-with open(output_path + 'plots_masked_test.csv', 'w') as f:
+with open(output_path + f'plots_{"masked_" if args.get("add_masking") else ""}test.csv', 'w') as f:
     train_writer = csv.writer(f, delimiter=',')
     for x, y in zip(X_test, y_test):
         train_writer.writerow([y, x])

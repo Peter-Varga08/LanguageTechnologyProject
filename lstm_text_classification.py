@@ -16,13 +16,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import time
-
-from dataloader_movies import movies_df, shortlisted_genres
+import argparse
 
 # ----------- Pre-processing constants -----------
 MIN_COUNT = 3
 PLOT_LENGTH = 200
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-mode', '--classification_mode', help="Which dataset to use the LSTM on.",
+                    type=str, default=None)
+parser.add_argument('-t', '--training', help="Whether to do parameter sweep or testing",
+                    type=bool, default=False)
+args = vars(parser.parse_args())
 
 class PreTrainedEmbeddings(object):
     def __init__(self, word_to_index, word_vectors):
@@ -275,70 +280,80 @@ tok = spacy.load('en_core_web_sm')
 # |-----------------------------------------|
 # |  OPTION 1: GENRE CLASSIFICATION DATASET |
 # |-----------------------------------------|
-counts = trim_rare_words(movies_df, tok)
-word2idx = create_vocabulary(counts)
-movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH)))
-num_classes = len(shortlisted_genres)
-title = 'Genre'
-print("number of classes %d" % num_classes)
-X = list(movies_df['Plot_encoded'])
-y = list(movies_df['genre_encoded'])
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-# -----------------------------------------------------------
+if args.get('classification_mode') == 'genre':
+    print("Using genre dataset.")
+    from dataloader_movies import movies_df, shortlisted_genres
+    counts = trim_rare_words(movies_df, tok)
+    word2idx = create_vocabulary(counts)
+    movies_df['Plot_encoded'] = movies_df['Plot'].apply(lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH)))
+    num_classes = len(shortlisted_genres)
+    title = 'Genre'
+    print("number of classes %d" % num_classes)
+    X = list(movies_df['Plot_encoded'])
+    y = list(movies_df['genre_encoded'])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
+    batch_sizes = [16]
+    embeddings = [50]
 # |-----------------------------------------|
 # | OPTION 2: CAST CLASSIFICATION DATASET   |
 # |-----------------------------------------|
-# X_train, y_train, = [], []
-# with open('./data/plots_masked_train.csv', "r") as f:
-#     plot_reader = csv.reader(f, delimiter=',')
-#     plot_reader = list(iter(plot_reader))
-#     for row in plot_reader:
-#         y_train.append(int(row[0]))
-#         X_train.append(row[1])
-#
-# X_valid, y_valid, = [], []
-# with open('./data/plots_masked_valid.csv', "r") as f:
-#     plot_reader = csv.reader(f, delimiter=',')
-#     plot_reader = list(iter(plot_reader))
-#     for row in plot_reader:
-#         y_valid.append(int(row[0]))
-#         X_valid.append(row[1])
-#
-# X_test, y_test, = [], []
-# with open('./data/plots_masked_test.csv', "r") as f:
-#     plot_reader = csv.reader(f, delimiter=',')
-#     plot_reader = list(iter(plot_reader))
-#     for row in plot_reader:
-#         y_test.append(int(row[0]))
-#         X_test.append(row[1])
-#
-# num_classes = 10
-# title = 'Cast'
-# assert num_classes == len(set(y_train)) == len(set(y_valid)) == len(set(y_test))
-# counts = trim_rare_words(X_train, tok)
-# word2idx = create_vocabulary(counts)
-# encode = lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH))
-# X_train = [encode(x) for x in X_train]  # encoded
-# X_valid = [encode(x) for x in X_valid]  # encoded
-# X_test = [encode(x) for x in X_test]  # encoded
-# -----------------------------------------------------------
+elif args.get('classification_mode') == 'cast':
+    print("Using cast dataset.")
+    X_train, y_train, = [], []
+    with open('./data/plots_masked_train.csv', "r") as f:
+        plot_reader = csv.reader(f, delimiter=',')
+        plot_reader = list(iter(plot_reader))
+        for row in plot_reader:
+            y_train.append(int(row[0]))
+            X_train.append(row[1])
 
-# ----------- Parameter sweep -----------
-# training = True
-# batch_sizes = [16, 32, 64]
-# embeddings = [50, 100, 200, 300]
-# ----------- Best parameters for test run --------------
-# if training is True, validation, with early stopping criterion based on the validation accuracy, will take place in each epoch,
+    X_valid, y_valid, = [], []
+    with open('./data/plots_masked_valid.csv', "r") as f:
+        plot_reader = csv.reader(f, delimiter=',')
+        plot_reader = list(iter(plot_reader))
+        for row in plot_reader:
+            y_valid.append(int(row[0]))
+            X_valid.append(row[1])
+
+    X_test, y_test, = [], []
+    with open('./data/plots_masked_test.csv', "r") as f:
+        plot_reader = csv.reader(f, delimiter=',')
+        plot_reader = list(iter(plot_reader))
+        for row in plot_reader:
+            y_test.append(int(row[0]))
+            X_test.append(row[1])
+
+    num_classes = 10
+    title = 'Cast'
+    assert num_classes == len(set(y_train)) == len(set(y_valid)) == len(set(y_test))
+    counts = trim_rare_words(X_train, tok)
+    word2idx = create_vocabulary(counts)
+    encode = lambda x: np.array(encode_sentence(x, tok, word2idx, PLOT_LENGTH))
+    X_train = [encode(x) for x in X_train]  # encoded
+    X_valid = [encode(x) for x in X_valid]  # encoded
+    X_test = [encode(x) for x in X_test]  # encoded
+
+    batch_sizes = [32]
+    embeddings = [200]
+    # -----------------------------------------------------------
+else:
+    raise ValueError('classification_mode has to be either "genre" or "cast"')
+
+# if training is True, validation, with early stopping criterion based on the validation accuracy,
+# will take place in each epoch,
 # otherwise just keeps training with early stopping criterion being based on the training accuracy
-training = False
-# for genre classification
-batch_sizes = [16]
-embeddings = [50]
-# for cast classification
-# batch_sizes = [32]
-# embeddings = [200]
+if args.get('training'):
+    print("Running parameter sweep")
+    # ----------- Parameter sweep -----------
+    training = True
+    batch_sizes = [16, 32, 64]
+    embeddings = [50, 100, 200, 300]
+else:
+    print("Running testing")
+    training = False
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if training:
